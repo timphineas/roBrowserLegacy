@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Big5 charset check</title>
+		<script src="../shared/importmap.js"></script>
+	</head>
+	<body>
+		<p id="out">waiting</p>
+		<script type="module">
+			import TextEncoding from 'Utils/CodepageManager.js';
+			const text = '登入測試';
+			TextEncoding.setCharset('big5');
+			const bytes = TextEncoding.encode(text, 'big5');
+			const asBig5 = TextEncoding.decode(bytes, 'big5');
+			const as1252 = TextEncoding.decode(bytes, 'windows-1252');
+			const asNetwork = TextEncoding.decode(bytes, 'utf-8');
+			const filenameBytes = TextEncoding.encode('data\\mapnametable.txt', 'windows-1252');
+			const filename = TextEncoding.decode(filenameBytes, 'windows-1252');
+			const out = document.getElementById('out');
+			out.textContent =
+				asBig5 +
+				'\nwindows-1252: ' +
+				as1252 +
+				'\nutf8-smart: ' +
+				asNetwork +
+				'\nfilename: ' +
+				filename;
+			out.dataset.ok = String(asBig5 === text && as1252 !== text && asNetwork === text && filename === 'data\\mapnametable.txt');
+		</script>
+	</body>
+</html>

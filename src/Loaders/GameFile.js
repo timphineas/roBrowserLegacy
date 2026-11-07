@@ -337,7 +337,8 @@ function loadEntries(out, count, version) {
 		pos++;
 
 		entries[i] = {
-			filename: TextEncoding.decode(out.subarray(start, end), 'utf-8'),
+			// Filesystem lookup stays windows-1252 even when langtype selects Big5 or GBK.
+			filename: TextEncoding.decode(out.subarray(start, end), 'windows-1252'),
 			pack_size: out[pos++] | (out[pos++] << 8) | (out[pos++] << 16) | (out[pos++] << 24),
 			length_aligned: out[pos++] | (out[pos++] << 8) | (out[pos++] << 16) | (out[pos++] << 24),
 			real_size: out[pos++] | (out[pos++] << 8) | (out[pos++] << 16) | (out[pos++] << 24),

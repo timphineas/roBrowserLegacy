@@ -662,10 +662,12 @@ const unknownItem = {
 const servers = Configs.get('servers', []);
 const langType = servers[0] && servers[0].langtype ? parseInt(servers[0].langtype, 0) : 0;
 
-// setup default encoding
+// User-facing text follows servers[0].langtype. GRF filenames stay windows-1252
+// and are decoded with that charset at the call site, not through this default.
 const userCharpage = TextEncoding.detectEncodingByLangtype(langType, Configs.get('disableKorean'));
 const grfCharpage = 'windows-1252';
-TextEncoding.setCharset(grfCharpage);
+// Network read falls back here when the bytes are not UTF-8. Filenames do not.
+TextEncoding.setCharset(userCharpage);
 
 // create decoders
 const userStringDecoder = TextEncoding;
@@ -5265,7 +5267,9 @@ function loadCSV(filename, targetTable, keyIndex, valueIndex, onEnd) {
 
 			// Check if the file is Base64 encoded
 			if (!text.trimEnd().endsWith('=')) {
-				text = TextEncoding.decode(bytes, 'utf-8');
+				// Plain table text uses the langtype charset. UTF-8 here ignored
+				// langtype and fell back to windows-1252.
+				text = TextEncoding.decode(bytes, userCharpage);
 				isBase64 = false;
 			}
 
