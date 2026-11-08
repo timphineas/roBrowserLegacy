@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>ROx local test - roBrowserLegacy</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<style type="text/css">
+			html,
+			body {
+				margin: 0;
+				height: 100%;
+				background: #060810;
+			}
+			#robrowser {
+				height: 100%;
+			}
+		</style>
+		<script type="text/javascript" src="../api/api.js"></script>
+		<script type="text/javascript">
+			// Separate from demo.html. The empty remoteClient replaces the api.js default.
+			// Do not delete the empty string and do not put a URL there.
+			function buildRoxTestConfig() {
+				return {
+					target: document.getElementById('robrowser'),
+					type: ROBrowser.TYPE.INLINE,
+					application: ROBrowser.APP.ONLINE,
+					development: true,
+					version: 'rox-local-test',
+					remoteClient: '',
+					servers: [
+						{
+							display: 'ROx',
+							desc: 'Login form only. No socket until Connect, which must not be pressed yet.',
+							address: '182.234.122.24',
+							port: 6900,
+							// UNCONFIRMED. Fork demo uses 55 for its 2025 sample. Not read from this server.
+							version: 55,
+							// clientinfo <langtype>4</langtype> → big5. Also sent as login clienttype.
+							langtype: 4,
+							disableKorean: false,
+							// UNCONFIRMED. Stated by the operator. This fork's newest outbound packet layout date is 20211103.
+							packetver: 20250716,
+							// UNCONFIRMED. LoginEngine defaults to false when renewal is omitted.
+							renewal: false,
+							packetKeys: false,
+							socketProxy: 'ws://127.0.0.1:5999',
+							remoteClient: '',
+							registrationweb: '',
+							forceUseAddress: true,
+							adminList: []
+						}
+					],
+					packetDump: false,
+					skipServerList: true,
+					skipIntro: false,
+					grfList: 'DATA.INI',
+					loadLua: true,
+					autoLogin: [],
+					registrationweb: '',
+					saveFiles: false,
+					calculateHash: false,
+					clientHash: null,
+					clientVersionMode: 'PacketVer',
+					forceUseAddress: true,
+					packetKeys: false,
+					plugins: {},
+					socketProxy: 'ws://127.0.0.1:5999',
+					webserverAddress: null
+				};
+			}
+
+			function assertRoxTestConfig(config) {
+				var errors = [];
+				var banned = ['grf.robrowser.com', 'niktoutro.com', 'github.com', 'discord.com', 'discord.gg'];
+				function walk(value, path) {
+					if (typeof value === 'string') {
+						var lower = value.toLowerCase();
+						for (var i = 0; i < banned.length; i++) {
+							if (lower.indexOf(banned[i]) !== -1) {
+								errors.push(path + ' contains ' + banned[i]);
+							}
+						}
+					} else if (value && typeof value === 'object') {
+						Object.keys(value).forEach(function (key) {
+							walk(value[key], path + '.' + key);
+						});
+					}
+				}
+				walk(config, 'ROConfig');
+				var server = config.servers && config.servers.length === 1 ? config.servers[0] : null;
+				if (!server) {
+					errors.push('expected one server');
+				} else {
+					if (server.address !== '182.234.122.24' || Number(server.port) !== 6900) {
+						errors.push('login endpoint');
+					}
+					if (server.socketProxy !== 'ws://127.0.0.1:5999' || config.socketProxy !== 'ws://127.0.0.1:5999') {
+						errors.push('socket proxy');
+					}
+					if (server.remoteClient !== '' || config.remoteClient !== '') {
+						errors.push('remote client');
+					}
+					if (server.registrationweb !== '' || config.registrationweb !== '') {
+						errors.push('registration url');
+					}
+					if (server.forceUseAddress !== true || config.forceUseAddress !== true) {
+						errors.push('forceUseAddress');
+					}
+					if (server.packetKeys !== false || config.packetKeys !== false) {
+						errors.push('packetKeys');
+					}
+					if (server.packetver === 20130618 || server.packetver === 20250618) {
+						errors.push('demo packetver');
+					}
+					if (typeof server.packetver !== 'number') {
+						errors.push('packetver');
+					}
+				}
+				if (config.autoLogin && config.autoLogin.length) {
+					errors.push('autoLogin');
+				}
+				if (config.skipIntro !== false) {
+					errors.push('skipIntro');
+				}
+				if (config.development !== true) {
+					errors.push('development');
+				}
+				if (config.saveFiles !== false) {
+					errors.push('saveFiles');
+				}
+				if (config.calculateHash !== false || config.clientHash) {
+					errors.push('client hash');
+				}
+				if (config._serverEditMode) {
+					errors.push('server edit mode');
+				}
+				if (config.webserverAddress) {
+					errors.push('webserverAddress');
+				}
+				if (errors.length) {
+					throw new Error('ROx test page refused to start: ' + errors.join('; '));
+				}
+			}
+
+			window.addEventListener(
+				'load',
+				function () {
+					try {
+						var config = buildRoxTestConfig();
+						assertRoxTestConfig(config);
+						console.warn(
+							'[rox-local-test] Login 182.234.122.24:6900 via ws://127.0.0.1:5999. ' +
+								'langtype 4 selects big5 for user text. packetver 20250716. ' +
+								'The next login sends clienttype 4. poplab.grf stays mandatory and is still encrypted.'
+						);
+						var RO = new ROBrowser(config);
+						RO.start();
+					} catch (error) {
+						document.getElementById('robrowser').textContent = error.message;
+						console.error(error);
+					}
+				},
+				false
+			);
+		</script>
+	</head>
+	<body>
+		<div id="robrowser">ROx local test failed to start.</div>
+	</body>
+</html>

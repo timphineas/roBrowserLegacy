@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';  
 import { describe, it, expect, beforeEach, vi } from 'vitest';  
 import TextEncoding from 'Utils/CodepageManager.js';  
   
@@ -98,6 +99,7 @@ describe('CodepageManager', () => {
         it('disableKorean forces windows-1252 regardless of langtype', () => {  
             expect(detect(0x00, true)).toBe('windows-1252'); // Korea → forced 1252  
             expect(detect(0x02, true)).toBe('windows-1252'); // Japan → forced 1252  
+            expect(detect(0x04, true)).toBe('windows-1252'); // Taiwan → forced 1252  
             expect(detect(0x0e, true)).toBe('windows-1252'); // Russia → forced 1252  
         });  
   
@@ -165,6 +167,16 @@ describe('CodepageManager', () => {
             const encoded = TextEncoding.encode(text);  
             const decoded = TextEncoding.decode(encoded);  
             expect(decoded).toBe(text);  
+        });  
+
+        it('roundtrip Traditional Chinese with big5 and rejects windows-1252', () => {  
+            const text = '登入測試';  
+            TextEncoding.setCharset('big5');  
+            const encoded = TextEncoding.encode(text, 'big5');  
+            expect(TextEncoding.decode(encoded, 'big5')).toBe(text);  
+            expect(TextEncoding.decode(encoded, 'windows-1252')).not.toBe(text);  
+            expect(TextEncoding.decode(encoded, 'utf-8')).toBe(text);  
+            expect(TextEncoding.userCharset).toBe('big5');  
         });  
   
         it('roundtrip Thai text with windows-874', () => {  
@@ -274,5 +286,19 @@ describe('encode edge cases', () => {
             const result = TextEncoding.decodeString('\xbb\xe7\xb0\xfa');  
             expect(result).toBe('사과');  
         });  
+    });  
+});  
+
+describe('encoding call sites', () => {  
+    it('decodes GRF filenames as windows-1252 and plain CSV as the langtype charset', () => {  
+        const gameFile = readFileSync('src/Loaders/GameFile.js', 'utf8');  
+        const db = readFileSync('src/DB/DBManager.js', 'utf8');  
+        const writer = readFileSync('src/Utils/BinaryWriter.js', 'utf8');  
+        const reader = readFileSync('src/Utils/BinaryReader.js', 'utf8');  
+        expect(gameFile).toContain("TextEncoding.decode(out.subarray(start, end), 'windows-1252')");  
+        expect(db).toContain('TextEncoding.decode(bytes, userCharpage)');  
+        expect(db).toContain('TextEncoding.setCharset(userCharpage)');  
+        expect(reader).toContain("TextEncoding.decode(bytes.subarray(0, realLen), 'utf-8')");  
+        expect(writer).toContain("TextEncoding.encode(str, 'utf-8')");  
     });  
 });

@@ -30,7 +30,7 @@ const CodepageManager = {
 	 * @param {string} charset - Charset to use for decoding.
 	 */
 	setCharset: function setCharset(charset) {
-		const supported = ['windows-1252', 'windows-949', 'windows-1251', 'windows-932']; // GRF Editor default charsets
+		const supported = ['windows-1252', 'windows-949', 'windows-1251', 'windows-932', 'big5', 'gbk'];
 		if (supported.indexOf(charset) === -1 && !this.warned) {
 			console.warn(
 				'%c[Warning] You are using a ' +
